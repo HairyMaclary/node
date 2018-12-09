@@ -1,0 +1,51 @@
+******************************************
+
+                Node
+
+******************************************
+
+
+Javascript is quite a high level language. Functionality like memory menagement is abstracted away. Also, because js was created for use in browsers it lacks some other common functionality such as modules and sneding files around. V8 is an open source c++ applicaiton that converts JS into machine code instructions for a variety of commpn microprocessor arcitectures. It is thus a JS engine, and it also meets all the ECMA script soecifications for a JS engine. The advantage of v8 is that it has hooks so that it can be embedded in other c++ applicaitons. Node is such an application. It takes v8 and extends so that JS can be given extra functionality. This allows JS to be used outside of the browser. In particular it gives JS enough funcitonality to be used on a server (the client-server model is common, and the best example is on the internet, which used http to communicate between clients and servers). A server is connected to the internet and offers services.
+
+
+
+Modules 
+----------------------------------
+
+A module is a reusable block of code whose existence does not accidentially impact other code. Javascript did not orignally have this feature (although ECMAscript 6 spec does require it now). Node does this with 'CommonJS modules'.
+
+CommonJS modules are an agreed upon standard for how code modules should be structured. 
+
+Node supplies a built in function for importing modules called 'require('./filePath')'. 
+
+This will make any code that is invoked within that required file run. However any functions from that file can't just be called. This is to prevent naming collisions.
+
+So to call functions from the required file we have to use 'module.exports' in the required file. 
+
+greet.js:
+
+    // this line runs when greet is required in app.js. You don't even need to assign require to a variable
+    console.log('Due to require(), this appears automatically in app.js');
+
+    // this will not run in app.js unless we assign it to module.exports.
+    var greet = function() {
+        console.log("hello");
+    };
+
+    module.exports = greet;
+
+app.js
+
+    // to just get that first line from greet running
+    // require('./greet');
+
+    // now we use the idea that the require function returns 
+    // module.exports.
+    const greet = require('./greet');
+
+    greet();
+
+
+
+
+

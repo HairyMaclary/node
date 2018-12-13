@@ -172,7 +172,6 @@ Some of these modules are wrappers for c++ code and some are just js that you co
 
 
 
-
 Modules and ES6
 
 ES6 modules are also suported in v8 (but not node). Eg:
@@ -187,6 +186,69 @@ app.js:
 
     import * as greetr from 'greet';
     greetr.greet()
+
+
+
+
+
+Events and the Event Emitter
+---------------------------------------
+
+Many core node js modules are built upon this concept.
+
+Events in nodejs are:
+
+    'Something that has happened in our app that we can repsond to'.
+
+In nodejs we actually talk about two different kinds of events. On one side we have system events. They come from the c++ side of the nodejs core thanks to a library called libuv. These are events that have come form the computer system, like "I've finished reading a file", or "I've recieved information from the internet". These are events that JS did not originally have. 
+
+On the other side, in the JS core, we have custom events. These are completly different and are events that you can create for yourself. They are created in  an area is called the 'Event Emitter'. 
+
+Sometimes system events are sent on as custom events, so that they appear to be the same thing. But, they are not. 
+
+The js side is actually faking it. They are not real events. JS has not event concept or object. We create our own event library with the techinique that the node event emitter uses. 
+
+One key to understanding the event emiter is recalling that I can use string to dynamically access changing properties in an object:
+
+    var obj = {
+        greet: 'Hello'
+    }
+    // dot notation using the property name / key
+    console.log(obj.greet);  // Hello
+
+    //square bracket using the property name / key
+    console.log(obj['greet']) // Hello
+
+    // square brackets using a variable to hold the property name
+    var prop = 'greet';
+    console.log(obj[prop]); // Hello
+
+
+You also need to recall that array are collections, and since functions are first class objects they too can be included in an array.
+
+    let arr = [];
+
+    arr.push( () => {
+        console.log('1');
+    });
+
+    arr.push( () => {
+        console.log('2');
+    });
+
+    arr.push( () => {
+        console.log('2');
+    });
+
+    arr.forEach((fn) => {
+        fn();
+    })
+
+    // 1
+    // 2
+    // 3
+
+
 
 
 

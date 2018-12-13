@@ -321,6 +321,13 @@ You also need to recall that array are collections, and since functions are firs
     // 2
     // 3
 
+In this emiter example we will be able to say that an event has happened and then repond to it.
+
+'Event Listener': code that responds to an event. In JS the event listener  code is a function. You can have more than one listener for the same event. 
+
+'on' is a common name for an event listener, eg 'on a file being recieved' or 'on a request recieved'.
+
+type is for the type of event and a listener.
 
 
 

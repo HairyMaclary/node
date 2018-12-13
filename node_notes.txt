@@ -51,7 +51,16 @@ Primitive Value: any value that is not an object. These are passed by value into
 ******************************************
 
 
-Javascript is quite a high level language. Functionality like memory menagement is abstracted away. Also, because js was created for use in browsers it lacks some other common functionality such as modules and sneding files around. V8 is an open source c++ applicaiton that converts JS into machine code instructions for a variety of commpn microprocessor arcitectures. It is thus a JS engine, and it also meets all the ECMA script soecifications for a JS engine. The advantage of v8 is that it has hooks so that it can be embedded in other c++ applicaitons. Node is such an application. It takes v8 and extends so that JS can be given extra functionality. This allows JS to be used outside of the browser. In particular it gives JS enough funcitonality to be used on a server (the client-server model is common, and the best example is on the internet, which used http to communicate between clients and servers). A server is connected to the internet and offers services.
+Javascript is quite a high level language. Functionality like memory menagement is abstracted away. Also, because js was created for use in browsers it lacks some other common functionality such as modules and sneding files around. V8 is an open source c++ applicaiton that converts JS into machine code instructions for a variety of common microprocessor arcitectures. It is thus a JS engine, and it also meets all the ECMA script specifications for a JS engine. The advantage of v8 is that it has hooks so that it can be embedded in other c++ applicaitons. Node is such an application. It takes v8 and extends so that JS can be given extra functionality. This allows JS to be used outside of the browser. In particular it gives JS enough funcitonality to be used on a server (the client-server model is common, and the best example is on the internet, which used http to communicate between clients and servers). A server is connected to the internet and offers services.
+
+Some features missing from plan js:
+
+- better way to organise code into reusable pieces - ie modules
+- dealing with files
+- databases
+- communicate over the internet
+- accept requests and responses
+- deal with work that takes a long time
 
 
 
@@ -119,6 +128,200 @@ So firstName in the function is protected from firstName from the global scope.
 If require() cannot find a file that matches it's string argument it then looks for a folder of the same name. Then it will look for an index.js file within that folder. So you can require a number of files in the index.js, and include there return values in one module.exports object. Then, from say app.js, just require the folder that index.js lives in. You can run functions from any of the original files from a single object. 
 
 If `require()` is given the path of a JSON file (wich is really just a text file in JSON format - no methods and property names/keys in quotes), then that JSON string is returned back as a JSON object. 
+
+Common Module Patterns
+
+
+When node begins parses through a module, module.exports is first created as an empty object. So if you have just a function you are returning then just assign the function definition right to module.exports :
+
+greet.js:
+
+    module.exports = function() {
+        console.log('hello');
+    }
+
+app.js:
+
+    var greet = require('./greet');
+    greet();
+
+
+Also, because require is returning back our module.export as an object, often people use dot notation.
+
+app.js:
+
+    var greet2 = require('./greet').greet;
+    greet2();
+
+
+We can also employ other ways to make objects such as a function constructor.
+
+greet.js:
+
+    function Greetr() {
+        this.greeting = 'Hello World!';
+        this.greet = function() {
+            console.log(this.greeting);
+        }
+    }
+
+    // replace the empty object with our own object
+    module.exports = new Greetr();
+
+app.js:
+
+    const greet = require('./greet');
+    greet.greet();
+
+
+However, we have to be careful when generating what looks like two different objects:
+
+    const greet1 = require('./greet');
+    greet1.greeting = 'Changed Hello World'
+
+    const greet2 = require('./greet');
+    greet2.greet();  // Changed Hello World
+
+
+Here, eventhough it looked like we 'newed up' two different objects, the variables actually hold a reference to the same object. `require` actually caches a return object for each file name.
+
+An alternative, and 4th pattern, is to just place a reference to the constructor function in module.exports and let the `new` happen in app.js:
+
+    module.exports = Greetr;
+
+app .js:
+
+    const Greetr = require('./greet');
+    const greet1 = new Greetr();
+    greet1.greeting = 'Changed Hello World';
+
+    const greet2 = new Greetr();
+    greet2.greet();  // 'Hello World!
+
+
+The next pattern is very popular and useful:
+
+greet.js:
+
+    var greeting = 'Hello world!';
+
+    function greet() {
+        console.log(greeting);
+    }
+
+    module.exports = {
+        greet: greet
+    }
+
+
+app.js:
+
+    const greet = require('./greet').greet;
+    greet();  // 'Hello world!'
+
+So we no longer have access to the greeting variable in greet.js, but we can still see it being applied. We essentialy have a private variable. This is called the 'revealing module pattern': exposing only the properties and methods you want via a returned object. This is a common and clean way to structure and protect code within modules.
+
+
+Exports vs module.exports.
+
+In your module you can actually use 'exports' instead of module.exports (exports is the parameter name and module.exports is the argument for the IIFE that is wrapped around the code in your module). Both variables point ot the same object in memory. However, exports is tricky to use. If you use an assignment at the top level of the object then you are creating a new object and thus a new reference. It's a lot easier to never use it.
+
+
+
+Requiring Native (Core) Modules
+
+Native modules come from the lib folder in node. They are the core of the JS side. You can see all the native modules in the node API. Some need to be explicitly imported, ie `required1 and some do not. You can look in lib to see the file name and work out the path string you will need. However, you don't need a full file path. Just the filename will do. Eg for the Utilities module:
+
+    var util = require('util'); // for libs/util.js
+
+If you happen to have one of your own modules with the same name then using the path separator fill fix the problem: require('/util'). But this is not reccommend anyway since it may lead to confusion.
+
+Some of these modules are wrappers for c++ code and some are just js that you could have written yourself (but why bother?). Here we use the utilities module to date stamp, format and log a variable:
+
+    const util = require('util');
+    var name = 'Tony';
+    var greeting = util.format('Hello, %s', name);
+    util.log(greeting); // 13 Dec 15:28:09 - Hello, Tony 
+
+
+
+Modules and ES6
+
+ES6 modules are also suported in v8 (but not node). Eg:
+
+greet.js:
+
+    export function greet() {
+        console.log('Hello');
+    }
+
+app.js:
+
+    import * as greetr from 'greet';
+    greetr.greet()
+
+
+
+
+
+Events and the Event Emitter
+---------------------------------------
+
+Many core node js modules are built upon this concept.
+
+Events in nodejs are:
+
+    'Something that has happened in our app that we can repsond to'.
+
+In nodejs we actually talk about two different kinds of events. On one side we have system events. They come from the c++ side of the nodejs core thanks to a library called libuv. These are events that have come form the computer system, like "I've finished reading a file", or "I've recieved information from the internet". These are events that JS did not originally have. 
+
+On the other side, in the JS core, we have custom events. These are completly different and are events that you can create for yourself. They are created in  an area is called the 'Event Emitter'. 
+
+Sometimes system events are sent on as custom events, so that they appear to be the same thing. But, they are not. 
+
+The js side is actually faking it. They are not real events. JS has not event concept or object. We create our own event library with the techinique that the node event emitter uses. 
+
+One key to understanding the event emiter is recalling that I can use string to dynamically access changing properties in an object:
+
+    var obj = {
+        greet: 'Hello'
+    }
+    // dot notation using the property name / key
+    console.log(obj.greet);  // Hello
+
+    //square bracket using the property name / key
+    console.log(obj['greet']) // Hello
+
+    // square brackets using a variable to hold the property name
+    var prop = 'greet';
+    console.log(obj[prop]); // Hello
+
+
+You also need to recall that array are collections, and since functions are first class objects they too can be included in an array.
+
+    let arr = [];
+
+    arr.push( () => {
+        console.log('1');
+    });
+
+    arr.push( () => {
+        console.log('2');
+    });
+
+    arr.push( () => {
+        console.log('2');
+    });
+
+    arr.forEach((fn) => {
+        fn();
+    })
+
+    // 1
+    // 2
+    // 3
+
+
 
 
 

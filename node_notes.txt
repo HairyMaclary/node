@@ -16,7 +16,7 @@ Because 'this' has been automaticaly created then we can attach things to it ins
 It's also possible to add to this object's prototype (see 'prototype chain' - in js inheritance is from other objects, not a class):
 
     Person.prototype.greet = function() {
-        // use 'this' so that we refer to the object and not some variable
+        // use 'this' so that we refer to the object and not some variable (so don't use an arrow function here)
         console.log('hello ' + this.firstName + ' ' + this.lastName);
     }
 
@@ -321,13 +321,82 @@ You also need to recall that array are collections, and since functions are firs
     // 2
     // 3
 
-In this emiter example we will be able to say that an event has happened and then repond to it.
+In this emiter example we will build our own simple version of the node event emitter. We will be able to see that an event has happened and then repond to it. 
 
-'Event Listener': code that responds to an event. In JS the event listener  code is a function. You can have more than one listener for the same event. 
+Inside the ee we will have an `on` method. 'on' is a common name for an event listener because it reads nicely. EG I might say 'on a file being opened' or 'on a message being recieved'.
 
-'on' is a common name for an event listener, eg 'on a file being recieved' or 'on a request recieved'.
+The on method then takes two arguments. One is for the type of event and the other is an event listener.
 
-type is for the type of event and a listener.
+'Event Listener': code that responds to an event. In JS the event listener code is usually a function. When the event happens this code is invoked. You can have more than one listener for the same event. 
+
+emitter.js:
+
+    // could also use a class contructor to make this object
+    // we want to be able to create multiple emitters.
+    function Emitter() {
+        this.events = {};
+    }
+
+    // add an "on" method to the protoype of all objects created from the function constructor
+    Emitter.prototype.on = function (type, listener) {
+
+        //if the type property already exists then good, otherwise make a new array.
+        this.events[type] = this.events[type] || [];
+        
+        // now push the listener function into the array
+        // we are building up an array of functions. One array for each event type.
+        // onBlah: [function() {...}, function() {...}, ... }
+        this.events[type].push(listener);
+    }
+
+    // now we want to say that something happened; we emit an event.
+    Emitter.prototype.emit = function (type) {
+        // If I have the type of event on my object, i'll loop over the 
+        // associated array and execute each listener function
+        if(this.events[type]) {
+            this.events[type].forEach(listener => {
+                listener();
+            })
+        }
+    }
+
+    module.exports = Emitter;
+
+
+
+app.js:
+
+    const Emitter = require('./emitter');
+
+    let emtr = new Emitter();
+
+    // Add some listeners
+
+    // say whenever a greet happens we want to do something.
+    emtr.on('greet', () => {
+        console.log('Somewhere, someone said hello.');
+    });
+
+    // And this is another thing to do when a greet occurs
+    emtr.on('greet', () => {
+        console.log('A greeting occured!');
+    });
+
+    // simulate the event:
+    console.log('Hello!');
+
+    // let the application know that a greet event happened
+    emtr.emit('greet');
+
+You can check out the real event framework in lib/events.js. 'On' is an alias for `addEventListener`.
+
+To re-write our example so that it uses the real event framework just change the import statement in app.js:
+
+    const Emitter = require('events');
+
+Magic String: a string that has some special meaning in our code. This is bas because it makes it easy for a typo to cause a bug, and hard to track down that bug.
+
+
 
 
 

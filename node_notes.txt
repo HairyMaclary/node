@@ -32,8 +32,26 @@ If you ever want to see the prototype for an object use __proto__ :
     // not recommended for produciton code
     console.log(john.__proto__);  // { greet: [function] } 
 
+The es6 version of a function constructor is syntactic sugar. Classes in JS are not the same as they are in other languages.
+    
+    'use strict';
 
+    class Person {
+        
+        // on each object
+        constructor (firstName, lastName) {
+            this.lastName = lastName;
+            this.firstName = firstName;
+        }
 
+        // on the prototype that each object shares
+        greet() {
+            console.log('hello ' + this.firstName + ' ' + this.lastName);
+        }
+    }
+
+    // object created the same way
+    var john = new Person('John', 'Doe');
 
 Primitive Value: any value that is not an object. These are passed by value into functions.
 
@@ -478,10 +496,8 @@ app.js:
         this.greeting = 'Hello World!';
     }
 
-    // The prototype for EventEmitter will also be
-    // the prototype for all objects created from Greetr
-    // Greetr objects our now event emitters plus  
-    // whatever extra methods we give them.
+    // The prototype for objects created from EventEmitter will also be the prototype of the prototypes
+    // created for all objects created from Greetr
     util.inherits(Greetr, EventEmitter);
 
     // You can still as your own methods and properties
@@ -504,10 +520,45 @@ app.js:
 
     greeter1.greet('Tony');
 
+Here is the same code converted to es6 (the call to super is discussed further below).
+
+greetr.js:
+
+    'use strict';
+
+    var EventEmitter = require('events');
+
+    // use `extends` instead of util.inherits(Greetr, EventEmitter);
+    module.exports = class Greetr extends EventEmitter {
+        constructor() {
+            super(); // get specific object properties
+            this.greeting = 'Hello World!';
+        }
+
+        greet(data) {
+            console.log(this.greeting + ': ' + data);
+            this.emit('greet', data);  // normally don't use a magic string
+        }
+
+    }
+
+app.js
+
+    var Greetr = require('./greetr');
+
+    const greeter1 = new Greetr();
+
+    greeter1.on('greet', function (data) {
+        console.log('Someone greeted: ' + data);
+    })
+
+    greeter1.greet('Tony');
+
+
 
 This is a key concept in node. Many objects in node can do many things plus listen for and emit events.
 
-Here ois another example that eaits for async random number requests to be generated.
+Here is another example that waits for async random number requests to be generated.
 
 numEvents.js:
 

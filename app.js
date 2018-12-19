@@ -1,28 +1,9 @@
-const util = require('util');
+var Greetr = require('./greetr');
 
-function Person() {
-    this.firstName = "John";
-    this.lastName = "Doe";
-}
+const greeter1 = new Greetr();
 
-Person.prototype.greet = function() {
-    console.log(`Hello ${this.firstName} ${this.lastName}`);
-}
+greeter1.on('greet', function (data) {
+    console.log('Someone greeted: ' + data);
+})
 
-function PoliceOfficer() {
-    // Because this is a function constructor an empty object is assigned to 'this'
-    Person.call(this); // attach properties to `this` from the super constructor
-    this.badgeNumer = 1234;
-}
-
-// make the prototype of the prototype for police objects the same prototype
-// that Person objects have.
-util.inherits(PoliceOfficer, Person);
-
-const officer = new PoliceOfficer();
-
-// name properties inherited
-officer.greet(); // Hello John Doe
-
-// greet is on the proto of the proto!
-officer.__proto__.__proto__.greet(); // Hello undefined undefined
+greeter1.greet('Tony');

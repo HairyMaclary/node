@@ -635,7 +635,7 @@ Here is another example of utils along with comlete inheritance. This a sommon p
 
 
 
-Aysnchronus Code
+Aysnchronous Code
 -------------------------------------------
 
-Aysnchronus: more than one process is running simultaneously. JS and v8 are synchronus (one process or one line of code running at a time). Node does things asynchronously. When we think about synchromisity we really have to think about what a js engine is sitting inside of. It is a browser or is it node?
+Aysnchronous: more than one process is running simultaneously. JS and v8 are synchronous (one process or one line of code running at a time). Node does things asynchronously. When we think about synchronisity we really have to think about what a js engine is sitting inside of. It is a browser or is it node?

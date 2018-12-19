@@ -39,9 +39,6 @@ Primitive Value: any value that is not an object. These are passed by value into
 
 
 
-
-
-
 ]
 
 ******************************************
@@ -279,7 +276,7 @@ On the other side, in the JS core, we have custom events. These are completly di
 
 Sometimes system events are sent on as custom events, so that they appear to be the same thing. But, they are not. 
 
-The js side is actually faking it. They are not real events. JS has not event concept or object. We create our own event library with the techinique that the node event emitter uses. 
+The js side is actually faking it. They are not real events. JS has no event concept or object. We create our own event library with the techinique that the node event emitter uses. 
 
 One key to understanding the event emiter is recalling that I can use string to dynamically access changing properties in an object:
 
@@ -394,10 +391,194 @@ To re-write our example so that it uses the real event framework just change the
 
     const Emitter = require('events');
 
-Magic String: a string that has some special meaning in our code. This is bas because it makes it easy for a typo to cause a bug, and hard to track down that bug.
+TO prevent magic strings we also create and require a config.js file:
+
+config.js:
+
+    module.exports = {
+        events: {
+            GREET: 'greet',
+            FILESAVED: 'filesaved',
+            FILEOPENED: 'fileopened'
+        }
+    }
 
 
+Magic String: a string that has some special meaning in our code. They make it easy for a typo to cause a bug, and hard to track down that bug. It's just a string, not a variable. Relying on a string to be the basis for the logic in your code is dangerous.
 
 
+So out final app.js is:
 
+    const Emitter = require('events');
+    const events = require('./config').events;
+
+    let emtr = new Emitter();
+
+    // Add some listeners
+
+    // say whenever a greet happens we want to do something.
+    emtr.on(events.GREET, () => {
+        console.log('Somewhere, someone said hello.');
+    });
+
+    // And this is another thing to do when a greet occurs
+    emtr.on(events.GREET, () => {
+        console.log('A greeting occured!');
+    });
+
+    // simulate the event:
+    console.log('Hello!');
+
+    // let the application know that a greet event happened
+    emtr.emit(events.GREET);
+
+
+Aside on Object.create()
+
+Object.create takes an object. It then makes a new object and set the argument as the new object's prototype.
+
+    const Person = {
+        firstName = "",
+        lastName = "",
+        greet = function() {
+            console.log('Hello ' + firstName + ' ' + lastName);
+        }
+    }
+
+    // john has Person as a prototype but it creates it's own name variables
+    // so that the JS engine is not looking for them up the chain
+    let john = Object.create(Person);
+    john.firstName = "John";
+    john.lastName = "Doe";
+
+    // jane share the same prototype as john
+    let jane = Object.create(Person);
+    jane.firstName = "Jane";
+    jane.lastName = "Doe";
+
+
+Inheriting from the Event Emitter
+
+We know about several inheritance approaches (ie ways to set up the prototype chain). Function constructors, extending a class and Object.create().
+
+Within util.js (the utilities module in the node library), there is a method called inherits. This allows us to give set up an entire node library object, like the event emitter module, as the prototype of one of our own contructors. That is, a node module becomes the prototype of a constructor. The first argument is your custom constructor and the second is the module that will become the prototype.
+
+
+Under the hood it looks a little like 
+
+    myConstructor.prototype = Object.create(superContructor.prototype);
+
+
+app.js:
+
+    var EventEmitter = require('events');
+    var util = require('util');
+
+    function Greetr() {
+        this.greeting = 'Hello World!';
+    }
+
+    // The prototype for EventEmitter will also be
+    // the prototype for all objects created from Greetr
+    // Greetr objects our now event emitters plus  
+    // whatever extra methods we give them.
+    util.inherits(Greetr, EventEmitter);
+
+    // You can still as your own methods and properties
+    Greetr.prototype.greet = function(data) {
+        console.log(this.greeting + ': ' + data);
+
+        // And you can access EE methods too (which are on 'this' - 
+        // the created object- don't call EventEmitter.emit because
+        // EventEmitter is a constructor and not your object)
+        // Here we use an optional argument in emit. Emit automatically
+        // passes extra arguments into the event listeners
+        this.emit('greet', data);  // normally don't use a magic string
+    }
+
+    const greeter1 = new Greetr();
+
+    greeter1.on('greet', function(data) {
+        console.log('Someone greeted: ' + data);
+    })
+
+    greeter1.greet('Tony');
+
+
+This is a key concept in node. Many objects in node can do many things plus listen for and emit events.
+
+Here ois another example that eaits for async random number requests to be generated.
+
+numEvents.js:
+
+    // extends the events lib to handle random number events
+    const util = require('util');
+    const EventEmitter = require('events');
+    const eventConfig = require('./config2').events;
+
+    function NumEventer() {
+        // add in a call to the super constructor if you also need some 
+        // properties generated only in that constructor
+        // EventEmitter.call(this);
+    }
+
+    const numRequest = function() {
+        setTimeout(() => {
+            const randomNum = Math.random();
+            this.emit(eventConfig.NUM_REC, randomNum);
+        }, 2000);
+    }
+
+    util.inherits(NumEventer, EventEmitter);
+
+    NumEventer.prototype.on(eventConfig.NUM_REC, function(numData) {
+        console.log(`Your percentage is: ${(numData*100).toPrecision(2)} %`);
+    });
+
+    NumEventer.prototype.request = function() {
+        numRequest.call(this);
+        console.log('Sent a request for random number');
+    };
+
+    module.exports = NumEventer;
+
+app.js
+
+    const NumEventer = require('./numEvents');
+    const numEventer = new NumEventer();
+
+    // request a random number from the "net"
+    numEventer.request();
+
+
+Here is another example of utils along with comlete inheritance. This a sommon pattern in nodejs
+
+    const util = require('util');
+
+    function Person() {
+        this.firstName = "John";
+        this.lastName = "Doe";
+    }
+
+    Person.prototype.greet = function() {
+        console.log(`Hello ${this.firstName} ${this.lastName}`);
+    }
+
+    function PoliceOfficer() {
+        // Because this is a function constructor an empty object is assigned to 'this'
+        Person.call(this); // attach properties to `this` from the super constructor
+        this.badgeNumer = 1234;
+    }
+
+    // make the prototype of the prototype for police objects the same prototype
+    // that Person objects have.
+    util.inherits(PoliceOfficer, Person);
+
+    const officer = new PoliceOfficer();
+
+    // name properties inherited
+    officer.greet(); // Hello John Doe
+
+    // greet is on the proto of the proto!
+    officer.__proto__.__proto__.greet(); // Hello undefined undefined
 

@@ -650,6 +650,12 @@ However v8 is synchronous, so any work related to the callback is again placed i
 
 However, this entire process is aysnchronous. libuv is running it's own event loop while v8 is carrying on with what ever work it has to do. So this why node is often referred to as 'non-blocking'; node can get on with other work while waiting for some operation to complete. All your javascript code keeps working, and you app does not freeze up, while you wait for a request. 
 
+Streams and Buffers.
+
+A buffer is a temporary holding place for data while it is being moved from one place to another. It is intentioanlly limited in size so that the temporary data is not stored for long. Usually this data moves through in a 'stream'.
+
+A stream is a sequence of data moving over time. Within it are pieces of data eventually combine into a whole. 
+
 
 
 

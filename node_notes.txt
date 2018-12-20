@@ -639,3 +639,19 @@ Aysnchronous Code
 -------------------------------------------
 
 Aysnchronous: more than one process is running simultaneously. JS and v8 are synchronous (one process or one line of code running at a time). Node does things asynchronously. When we think about synchronisity we really have to think about what a js engine is sitting inside of. It is a browser or is it node?
+
+First recall what a callback is: a function passed to another function, which we asusme wil be invoked at some point. The function 'calls back' invoking the function you gave it when it is done with its work.
+
+We now look at the c++ side of events in node with libuv, the event loop and non-blocking code. We have already seem custom events with the event emitter. This was just a trick. Real system events are handled in the c++ core by a inbrary called libuv. This manages events from teh operating system. It is closer to the machine. 
+
+libuv sends requests to the operating system. Examples of these include opening files, database access, and requesting data from the internet. Responses back from teh OS are placed in a queue of events within libuv. libuvs constantly checks to see if something is in the queue. Sometimes, between checks, multiple events may have been added to the queue. When libuv does see that something is complete it processes it by running a callback back to v8. This is code that is meant to run when the libuv event loop completes (request --> event to queue --> event processed). If you dig into the c code within linuv's core code you actually see a while loop.  
+
+However v8 is synchronous, so any work related to the callback is again placed in v8's own queue of work. 
+
+However, this entire process is aysnchronous. libuv is running it's own event loop while v8 is carrying on with what ever work it has to do. So this why node is often referred to as 'non-blocking'; node can get on with other work while waiting for some operation to complete. All your javascript code keeps working, and you app does not freeze up, while you wait for a request. 
+
+
+
+
+
+

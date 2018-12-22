@@ -11,9 +11,9 @@
 // make a bunch of unit tests.
 
 
-function NameDB() {
-    this.names = {};
-}
+// function NameDB() {
+//     this.names = {};
+// }
 
 let names = {};
 

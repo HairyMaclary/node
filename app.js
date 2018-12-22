@@ -1,9 +1,11 @@
-var Greetr = require('./greetr');
+const fs = require('fs');
 
-const greeter1 = new Greetr();
+const greet = fs.readFileSync(__dirname + '/greet.txt', 'utf-8'); // utf-8 encoding specified
 
-greeter1.on('greet', function (data) {
-    console.log('Someone greeted: ' + data);
-})
+console.log(greet);
 
-greeter1.greet('Tony');
+const greet2 = fs.readFile(__dirname + '/greet.txt', 'utf-8', function(error, data) {
+   console.log('data inside readfile callback: ', data.toString());
+});
+
+console.log(greet2);

@@ -659,5 +659,137 @@ A stream is a sequence of data moving over time. Within it are pieces of data ev
 
 
 
+Buffers
+
+Traditionally JS was not very good at encoding. That is dealing with pure binary data. Suck work was more related to server side jobs. So node expands JS and allows us to deal with binary data.
+
+Binary data: data is stored in binary (aka base 2). Each 1 (high V) or 0 (low V) is called a 'bit' or 'binary digit'.
+
+Character set: a representation of characters as numbers. Each character gets a number. Unicode and ASCII are character sets.
+
+Character encoding: how characters are stored in binary. The numbers (or 'code points') are converted and stored in binary numbers.
+
+UTF-8 is a popualar character set because it encodes into 8 bit numbers, which allows for many characters.
+
+The node API details a built in buffer object. It mas many methods for dealing with binary data. You can choose a number of encoding syles.
+
+Ultimatly the node buffer object holds raw binary data, but it allows us to switch back. 
+
+    // buffer is so fundamental that a 'require' is not necessary
+    var buffer = new Buffer('Hello', 'utf-8'); // encode the given string with utf-8
+
+    console.log(buffer);   // <Buffer 48 65 6c 6c 6f>  - more readable hex representation of the binary data
+    console.log(buffer.toString());  // Hello
+    console.log(buffer.toJSON());  // { type: 'Buffer', data: [ 72, 101, 108, 108, 111 ] }
+    console.log(buffer[1]); // 101
+
+    // overwrite the buffer, which was initialised with only five characters
+    buffer.write('wo');
+    console.log(buffer.toString()); // wollo
+
+Often you won't directly deal with the buffer. Mostly a buffer object is coming back from some other utility or feature in nodejs. 
+
+
+Typed arrays;
+
+This is a feature embedded into the v8 engine. It is not actually nodejs. It is a way to deal with binary data in the buffer. If you change the array you are changing the buffer. If you read from the array you actually reading from the buffer. 
+
+These typed array have various structures (or types!). However, you use them like an array.
+
+    // storing raw binary data: 64 bits
+    var buffer = new ArrayBuffer(8); // give the size in bytes, not bits
+
+    // here we choose the int32 type
+    var view = new Int32Array(buffer);
+
+    view[0] = 5;
+    view[1] = 15;
+    console.log(view);  // Int32Array [ 5, 15 ]
+
+    // our 8 byte buffer does not enough capacity for another number
+    view[2] = 30;
+    console.log(view);  // Int32Array [ 5, 15 ] - no change
+
+
+Aside on callbacks and databases:
+
+You might be collecting information from a database, but, depending on the situation, you might also like to do different things with that data. One approach is to pass in callbacks that take in the same response data but deal with it in differnet ways.
+
+    function greet(callback) {
+        console.log('hello');
+        var data = {
+            name: 'John Doe'
+        }
+        callback(data);
+    }
+
+    function logIt(data) {
+        console.log('The callback was invoked');
+        console.log(data);
+    }
+
+    function greetName(data) {
+        console.log('A different callback was invoked');
+        console.log(data.name);
+    }
+
+    greet(logIt);
+
+    greet(greetName);
+
+    // hello
+    // The callback was invoked
+    // { name: 'John Doe' }
+    // hello
+    // A different callback was invoked
+    // John Doe
+
+
+Aync code example with files and the fs module (file system):
+
+readFileSync reads a text file and returns a string. Internally it loads the contents of a file into a buffer. You can specify the encoding in which you would like to get your string back too. 
+
+Recall that __dirname is a argument made for the IIFE that wraps a module.  It gives the path to the directory in which we are running code.
+
+greet.txt:
+
+    Hello world!
+
+app.js:
+
+    const fs = require('fs');
+    const greet = fs./readFileSync(__dirname + '/greet.txt', 'utf-8'); // utf-8 encoding specified
+    console.log(greet);  // Hello world!
+
+Notice 'Sync' in the method name. This tells that all code waits until the file has been read to the buffer and then returned back as a string. In most case you do not want your code to be synchronous. For example you might have many users and you do not want them to be blocked. The file might be vary large and so require a large buffer, which takes time. fs.readFile is async and requires a callback. As in the normal event-loop case, the callback is run once libuv has recieved a response from the OS. 
+
+note: 'error first callbacks' are popular in node. The first argument will be null if there is no error. 
+
+    const greet2 = fs.readFile(__dirname + '/greet.txt', function(error, data) {
+        console.log('data inside readfile callback: ', data);
+    });
+
+    console.log(greet2);
+
+    // undefined - the log ran before the data was ready
+    // data inside readfile callback:  <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64 21>  // binary buffer data
+
+So we saw the binary data in the buffer (logged as hex to make it more readable), but we can see this as a string by using toString(). And while utf-8 encoding is the default we'll specify it again:
+
+    const greet2 = fs.readFile(__dirname + '/greet.txt', 'utf-8', function(error, data) {
+    console.log('data inside readfile callback: ', data.toString());
+    });
+
+    console.log(greet2);
+
+    // undefined
+    // data inside readfile callback:  Hello world!
+
+Allways use async when you can because it is a better experience for your users. 
+
+
+Streams
+
+The buffer lives in a place called the heap. This is some memory allocated to the program. If you had many users all requesting the same file at the same time you may have problems.
 
 

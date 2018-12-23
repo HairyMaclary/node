@@ -1,11 +1,25 @@
 const fs = require('fs');
+const zlib = require('zlib');
 
-const greet = fs.readFileSync(__dirname + '/greet.txt', 'utf-8'); // utf-8 encoding specified
+var readable = fs.createReadStream(
+   __dirname + '/greet.txt'
+);
 
-console.log(greet);
+var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
 
-const greet2 = fs.readFile(__dirname + '/greet.txt', 'utf-8', function(error, data) {
-   console.log('data inside readfile callback: ', data.toString());
-});
+// a stream of compressed data to a file
+var compressed = fs.createWriteStream(__dirname + '/greetCopy.txt.gz');
 
-console.log(greet2);
+// a transformative stream; creates compressed data
+var gzip = zlib.createGzip(); 
+
+// Cannot chain from 'writable' because it's not readable
+readable.pipe(writable);
+
+// three streams here: 'readable', 'gzip', 'compressed'.
+readable.pipe(gzip).pipe(compressed);
+
+
+
+
+

@@ -68,14 +68,14 @@ Primitive Value: any value that is not an object. These are passed by value into
 
 Javascript is quite a high level language. Functionality like memory menagement is abstracted away. Also, because js was created for use in browsers it lacks some other common functionality such as modules and sneding files around. V8 is an open source c++ applicaiton that converts JS into machine code instructions for a variety of common microprocessor arcitectures. It is thus a JS engine, and it also meets all the ECMA script specifications for a JS engine. The advantage of v8 is that it has hooks so that it can be embedded in other c++ applicaitons. Node is such an application. It takes v8 and extends so that JS can be given extra functionality. This allows JS to be used outside of the browser. In particular it gives JS enough funcitonality to be used on a server (the client-server model is common, and the best example is on the internet, which used http to communicate between clients and servers). A server is connected to the internet and offers services.
 
-Some features missing from plan js:
+Some features missing from plan js that are addressed in node:
 
 - better way to organise code into reusable pieces - ie modules
-- dealing with files
+- dealing with files - streams and buffers
 - databases
 - communicate over the internet
-- accept requests and responses
-- deal with work that takes a long time
+- accept requests and send responses
+- deal with work that takes a long time - async methods and event loops. Streams for performance
 
 
 
@@ -274,8 +274,6 @@ app.js:
 
     import * as greetr from 'greet';
     greetr.greet()
-
-
 
 
 
@@ -791,5 +789,121 @@ Allways use async when you can because it is a better experience for your users.
 Streams
 
 The buffer lives in a place called the heap. This is some memory allocated to the program. If you had many users all requesting the same file at the same time you may have problems.
+
+Chunk: a piece of data being sent through a stream. 
+
+If you dig into the stream.js library file you can see that a stream object is an event emitter (it ueses util.inherits to extend EE). When certain events have occured code is run. There are 5 types of stream; readable (only read the data and you can't send data back), writable (send data but you can't read data from the stream), duplex (read and write data), transform (change the data as it moves through the stream), and passthrough. 
+
+Streams are merely a base or 'Abstract' class. Abstract classes are those you never work directly with but always inherit from. We always create a new custom object that inherit from abstract classes. This means that we are provided with base ideas about what a stream is but we have to implement how exacty we deal with the information. In saying this however, nodejs provides several implementations.
+
+In terms of a protoype chain we might have something like 
+
+    EventEmitter.prototype --> Stream.prototype --> Stream.Readable.prototype --> CustomSream
+
+When we talk about readable and writable we have to remember we are talking about these concepts from node's perspective somewhere on a stream. There may be another entity doing it's own thing at the other end of the stream, such as a webserver or a browser. For example a node server will percieve that requests from a browser a readable but the data is sends back is writable.
+
+Since streams are abstract we need a concrete implementation as an example. One is the fs module. fs.readStream. This is a specialised type of read only stream object which follows the above flow diagrammme.
+
+So in this example there is a text file, greet.txt, which has 10's of bytes of data. Once files get larger they get bigger than the buffer you'll only get pieces, or 'chunks' of the text file at any one time. This means that same 'data' event will be fired for each chunk, so that each associated event listener will be invoked multiple times. 
+
+    const fs = require('fs');
+
+    var readable = fs.createReadStream(
+    __dirname + '/greet.txt',
+    { 
+        encoding: 'utf8',          // will mean that a console.log is a string and not hex
+        highWaterMark: (32*1024) // 32 kBytes here but 64 by default.
+    }
+    );
+
+    // check out the docs for the correct event type; 'data'
+    readable.on('data', function(chunk) {
+    
+    // if no encoding is specified this is hex representaiton of the binary.
+    // each hex number is then a byte summary so that the length is the byte count.
+    //console.log(chunk);
+
+    console.log(chunk.length); // will be less that of the buffer's size in bytes (32 kBytes)
+    });
+
+    // 32768
+    // 9084
+
+
+Now let's write the data to another file.
+
+    const fs = require('fs');
+
+    var readable = fs.createReadStream(
+    __dirname + '/greet.txt'
+    );
+
+    // create a writable stream object
+    var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
+
+    readable.on('data', function(chunk) {
+    writable.write(chunk);
+    });
+
+Pipes
+
+Read and writing, as in the previous example, is so commone that there is actually a common term for it, 'pipes'.
+
+Pipes: A pipe connects two streams by writing one stream with what is being read from another stream. In node you pipe from a readable stream to a writabe stream.
+
+We can attach several pipes together and send data to multiple writable streams. 
+
+Readable objects have a pipe method attached. funcion pipe (destination, pipeOptions), where destionable is a writable stream. Under the hood, it's just a more robust version of what we did above. This function also returns the destination writable stream. This helps us to write our code in a cleaner way.
+
+    const fs = require('fs');
+
+    var readable = fs.createReadStream(
+    __dirname + '/greet.txt'
+    );
+
+    // create a writable stream object
+    var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
+
+    readable.pipe(writable);
+
+Now, if the streams are duplex (readable and writable), then I can use that return value to work with multiple stream. 
+
+Here we will use zlib, which is part of the node core. This allows us to implement a gzip file (a common file compression algorithm). We will copy the contents as before but aso create a compressed verion. Here we use zlib.createGzip(); to create a duplex stream. Since that stream is also writable, the pipe method will return this destination stream.  This is called chaining.
+
+Chaining: a method returns an object so that we can keep calling methods. If the parent object is returned then it's called cascading.
+
+    const fs = require('fs');
+    const zlib = require('zlib');
+
+    var readable = fs.createReadStream(
+    __dirname + '/greet.txt'
+    );
+
+    var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
+
+    // a stream of compressed data to a file
+    var compressed = fs.createWriteStream(__dirname + '/greetCopy.txt.gz');
+
+    // a transformative stream; creates compressed data
+    var gzip = zlib.createGzip(); 
+
+    // Cannot chain from 'writable' because it's not readable
+    readable.pipe(writable);
+
+    // three streams here: 'readable', 'gzip', 'compressed'.
+    readable.pipe(gzip).pipe(compressed);
+
+
+Node's memory and speed is optimised for streams, so we should always be thinking about when we can use streams. Always consider streams and async methods over sync methods.
+
+
+
+
+
+
+
+
+
+
 
 

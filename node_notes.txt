@@ -633,33 +633,31 @@ Here is another example of utils along with comlete inheritance. This a sommon p
 
 
 
-Aysnchronous Code
+Aysnchronous Code, Streams and Buffers
 -------------------------------------------
 
 Aysnchronous: more than one process is running simultaneously. JS and v8 are synchronous (one process or one line of code running at a time). Node does things asynchronously. When we think about synchronisity we really have to think about what a js engine is sitting inside of. It is a browser or is it node?
 
-First recall what a callback is: a function passed to another function, which we asusme wil be invoked at some point. The function 'calls back' invoking the function you gave it when it is done with its work.
+First recall what a callback is: a function passed to another function, which we asusme will be invoked at some point. The function 'calls back' invoking the function you gave it when it is done with its work.
 
-We now look at the c++ side of events in node with libuv, the event loop and non-blocking code. We have already seem custom events with the event emitter. This was just a trick. Real system events are handled in the c++ core by a inbrary called libuv. This manages events from teh operating system. It is closer to the machine. 
+We now look at the c++ side of events in node with libuv, with the event loop and non-blocking code. We have already seem custom events with the event emitter. This was just a trick. Real system events are handled in the c++ core by a library called libuv. This manages events from the operating system. It is closer to the machine. 
 
-libuv sends requests to the operating system. Examples of these include opening files, database access, and requesting data from the internet. Responses back from teh OS are placed in a queue of events within libuv. libuvs constantly checks to see if something is in the queue. Sometimes, between checks, multiple events may have been added to the queue. When libuv does see that something is complete it processes it by running a callback back to v8. This is code that is meant to run when the libuv event loop completes (request --> event to queue --> event processed). If you dig into the c code within linuv's core code you actually see a while loop.  
+libuv sends requests to the operating system. Examples of these include opening files, database access, and requesting data from the internet. Responses back from the OS are placed in a queue of events within libuv. libuv constantly checks to see if something is in the queue. Sometimes, between checks, multiple events may have been added to the queue. When libuv does see that something is complete it processes it by running the associated callback back back in v8. This is code that is meant to run when the libuv event loop completes (request --> event to queue --> event processed). If you dig into the c code within linuv's core code you actually see a while loop.  
 
-However v8 is synchronous, so any work related to the callback is again placed in v8's own queue of work. 
+V8 is synchronous, so any work related to the callback is again placed in v8's own queue of work. However, this entire process is aysnchronous. libuv is running it's own event loop while v8 is carrying on with whatever work it has to do. So this why node is often referred to as 'non-blocking'; node can get on with other work while waiting for some operation to complete. All your javascript code keeps working, and you app does not freeze up, while you wait for a request. 
 
-However, this entire process is aysnchronous. libuv is running it's own event loop while v8 is carrying on with what ever work it has to do. So this why node is often referred to as 'non-blocking'; node can get on with other work while waiting for some operation to complete. All your javascript code keeps working, and you app does not freeze up, while you wait for a request. 
 
-Streams and Buffers.
+Streams and Buffers
 
-A buffer is a temporary holding place for data while it is being moved from one place to another. It is intentioanlly limited in size so that the temporary data is not stored for long. Usually this data moves through in a 'stream'.
+A buffer is a temporary holding place for data while that data is being moved from one place to another. It is intentioanlly limited in size so that the temporary data is not stored for long. Usually this data is handled by an object called a 'stream'.
 
-A stream is a sequence of data moving over time. Within it are pieces of data eventually combine into a whole. 
-
+A stream is a sequence of data moving over time. Within it are pieces of data that are eventually combined into a whole. 
 
 
 
 Buffers
 
-Traditionally JS was not very good at encoding. That is dealing with pure binary data. Suck work was more related to server side jobs. So node expands JS and allows us to deal with binary data.
+Traditionally JS was not very good at encoding. That is, dealing with pure binary data. Suck work was more related to server side jobs. So node expands JS and allows us to deal with binary data.
 
 Binary data: data is stored in binary (aka base 2). Each 1 (high V) or 0 (low V) is called a 'bit' or 'binary digit'.
 
@@ -667,19 +665,19 @@ Character set: a representation of characters as numbers. Each character gets a 
 
 Character encoding: how characters are stored in binary. The numbers (or 'code points') are converted and stored in binary numbers.
 
-UTF-8 is a popualar character set because it encodes into 8 bit numbers, which allows for many characters.
+UTF-8 is a popular character set because it encodes into 8 bit numbers, which allows for many characters.
 
 The node API details a built in buffer object. It mas many methods for dealing with binary data. You can choose a number of encoding syles.
 
-Ultimatly the node buffer object holds raw binary data, but it allows us to switch back. 
+Ultimately a node buffer object holds raw binary data, but it allows us to change what you see with encoding. 
 
     // buffer is so fundamental that a 'require' is not necessary
     var buffer = new Buffer('Hello', 'utf-8'); // encode the given string with utf-8
 
     console.log(buffer);   // <Buffer 48 65 6c 6c 6f>  - more readable hex representation of the binary data
-    console.log(buffer.toString());  // Hello
-    console.log(buffer.toJSON());  // { type: 'Buffer', data: [ 72, 101, 108, 108, 111 ] }
-    console.log(buffer[1]); // 101
+    console.log(buffer.toString());  // Hello is produced with utf8.
+    console.log(buffer.toJSON());  // { type: 'Buffer', data: [ 72, 101, 108, 108, 111 ] } - the buffer is an object
+    console.log(buffer[1]); // 101 - the unicode decimal number for e. 
 
     // overwrite the buffer, which was initialised with only five characters
     buffer.write('wo');
@@ -709,9 +707,10 @@ These typed array have various structures (or types!). However, you use them lik
     console.log(view);  // Int32Array [ 5, 15 ] - no change
 
 
+
 Aside on callbacks and databases:
 
-You might be collecting information from a database, but, depending on the situation, you might also like to do different things with that data. One approach is to pass in callbacks that take in the same response data but deal with it in differnet ways.
+You might be collecting information from a database, but, depending on the situation, you might also like to do different things with that data. One approach is to pass in callbacks that take in the same response data but deal with it in different ways.
 
     function greet(callback) {
         console.log('hello');
@@ -756,10 +755,10 @@ greet.txt:
 app.js:
 
     const fs = require('fs');
-    const greet = fs./readFileSync(__dirname + '/greet.txt', 'utf-8'); // utf-8 encoding specified
+    const greet = fs.readFileSync(__dirname + '/greet.txt', 'utf-8'); // utf-8 encoding specified
     console.log(greet);  // Hello world!
 
-Notice 'Sync' in the method name. This tells that all code waits until the file has been read to the buffer and then returned back as a string. In most case you do not want your code to be synchronous. For example you might have many users and you do not want them to be blocked. The file might be vary large and so require a large buffer, which takes time. fs.readFile is async and requires a callback. As in the normal event-loop case, the callback is run once libuv has recieved a response from the OS. 
+Notice 'Sync' in the method name. This tells that all code waits until the file has been read to the buffer and then returned back as a string. In most case you do not want your code to be synchronous. For example you might have many users and you do not want them to be blocked. The file might be vary large and so require a large buffer or a long stream, which takes time. fs.readFile is async and requires a callback. As in the normal event-loop case, the callback is run once libuv has recieved a response from the OS. 
 
 note: 'error first callbacks' are popular in node. The first argument will be null if there is no error. 
 
@@ -769,7 +768,7 @@ note: 'error first callbacks' are popular in node. The first argument will be nu
 
     console.log(greet2);
 
-    // undefined - the log ran before the data was ready
+    // undefined - the 2nd log ran before the data was ready
     // data inside readfile callback:  <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64 21>  // binary buffer data
 
 So we saw the binary data in the buffer (logged as hex to make it more readable), but we can see this as a string by using toString(). And while utf-8 encoding is the default we'll specify it again:
@@ -786,44 +785,45 @@ So we saw the binary data in the buffer (logged as hex to make it more readable)
 Allways use async when you can because it is a better experience for your users. 
 
 
+
 Streams
 
 The buffer lives in a place called the heap. This is some memory allocated to the program. If you had many users all requesting the same file at the same time you may have problems.
 
-Chunk: a piece of data being sent through a stream. 
+Chunk: a piece of data being sent through a stream. Usully limited to the buffer size.
 
-If you dig into the stream.js library file you can see that a stream object is an event emitter (it ueses util.inherits to extend EE). When certain events have occured code is run. There are 5 types of stream; readable (only read the data and you can't send data back), writable (send data but you can't read data from the stream), duplex (read and write data), transform (change the data as it moves through the stream), and passthrough. 
+If you dig into the stream.js library file you can see that a stream object is an event emitter (it ueses util.inherits to extend EE). When certain events have occured code is then run. There are 5 types of stream objects you can use directly from node; readable (only read the data and you can't send data back), writable (send data but you can't read data from the stream), duplex (read and write data), transform (change the data as it moves through the stream), and passthrough. 
 
-Streams are merely a base or 'Abstract' class. Abstract classes are those you never work directly with but always inherit from. We always create a new custom object that inherit from abstract classes. This means that we are provided with base ideas about what a stream is but we have to implement how exacty we deal with the information. In saying this however, nodejs provides several implementations.
+The shared stream object at the base of these stypes is an 'abstract' or base class. Abstract classes are those you never work with directly but instead always only inherit from into a new custom object. This means that we are provided with base ideas about what a stream should be but we have to implement how exacty how we deal with the information we expect to recieve. In saying this however, nodejs provides several implementations, which were those mentioned above.
 
-In terms of a protoype chain we might have something like 
+So in terms of a protoype chain we might have something like 
 
-    EventEmitter.prototype --> Stream.prototype --> Stream.Readable.prototype --> CustomSream
+    EventEmitter.prototype --> Stream.prototype --> Stream.Readable.prototype --> CustomStream
 
-When we talk about readable and writable we have to remember we are talking about these concepts from node's perspective somewhere on a stream. There may be another entity doing it's own thing at the other end of the stream, such as a webserver or a browser. For example a node server will percieve that requests from a browser a readable but the data is sends back is writable.
+When we talk about readable and writable we have to remember we are talking about these concepts from node's perspective. There may be another entity doing it's own thing at the other end of a data stream (as opposed to a stream object), such as a webserver or a browser. For example a node server will perceive that requests from a browser are readable but return data that is send back is writable.
 
 Since streams are abstract we need a concrete implementation as an example. One is the fs module. fs.readStream. This is a specialised type of read only stream object which follows the above flow diagrammme.
 
-So in this example there is a text file, greet.txt, which has 10's of bytes of data. Once files get larger they get bigger than the buffer you'll only get pieces, or 'chunks' of the text file at any one time. This means that same 'data' event will be fired for each chunk, so that each associated event listener will be invoked multiple times. 
+So in this example there is a text file, greet.txt, which has 10's of kBytes of data. Once files get larger they get bigger than the buffer you'll only get pieces, or 'chunks' of the text file at any one time. This means that same 'data' event will be fired for each chunk, so that each associated event listener will be invoked multiple times. The default buffer size is 64 kBytes.
 
     const fs = require('fs');
 
     var readable = fs.createReadStream(
-    __dirname + '/greet.txt',
-    { 
-        encoding: 'utf8',          // will mean that a console.log is a string and not hex
-        highWaterMark: (32*1024) // 32 kBytes here but 64 by default.
-    }
+        __dirname + '/greet.txt',
+        { 
+            encoding: 'utf8',          // will mean that a console.log is a string and not hex
+            highWaterMark: (32*1024) // override the default with 32 kBytes.
+        }
     );
 
     // check out the docs for the correct event type; 'data'
     readable.on('data', function(chunk) {
     
-    // if no encoding is specified this is hex representaiton of the binary.
-    // each hex number is then a byte summary so that the length is the byte count.
-    //console.log(chunk);
+        // If no encoding is specified this is a hex representaiton of the binary.
+        // Each hex number is then a byte summary so that the length is the byte count.
+        // console.log(chunk);
 
-    console.log(chunk.length); // will be less that of the buffer's size in bytes (32 kBytes)
+        console.log(chunk.length); // will be less that of the buffer's size in bytes (32 kBytes here)
     });
 
     // 32768
@@ -835,40 +835,44 @@ Now let's write the data to another file.
     const fs = require('fs');
 
     var readable = fs.createReadStream(
-    __dirname + '/greet.txt'
+        __dirname + '/greet.txt'
     );
 
     // create a writable stream object
     var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
 
     readable.on('data', function(chunk) {
-    writable.write(chunk);
+        writable.write(chunk);
     });
+
+[now we have seen several ways of reading data from a file; readFileSync, readFile, and createReadStream]
+
+
 
 Pipes
 
-Read and writing, as in the previous example, is so commone that there is actually a common term for it, 'pipes'.
+Reading and then writing, as in the previous example, is such a common pattern that there is actually a common term for it; 'pipes'.
 
 Pipes: A pipe connects two streams by writing one stream with what is being read from another stream. In node you pipe from a readable stream to a writabe stream.
 
 We can attach several pipes together and send data to multiple writable streams. 
 
-Readable objects have a pipe method attached. funcion pipe (destination, pipeOptions), where destionable is a writable stream. Under the hood, it's just a more robust version of what we did above. This function also returns the destination writable stream. This helps us to write our code in a cleaner way.
+Readable objects have a pipe method attached: it looks like function pipe (destination, pipeOptions) {...}, where destonation is a writable stream. Under the hood, it's just a more robust version of what we did above. This function also returns the destination writable stream. This helps us to write our code in a cleaner way.
 
     const fs = require('fs');
 
     var readable = fs.createReadStream(
-    __dirname + '/greet.txt'
+        __dirname + '/greet.txt'
     );
 
     // create a writable stream object
     var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
 
-    readable.pipe(writable);
+    readable.pipe(writable);  // [event listener created for us]
 
-Now, if the streams are duplex (readable and writable), then I can use that return value to work with multiple stream. 
+Now, if the streams are duplex (readable and writable), then we can use the return value to work with multiple streams. 
 
-Here we will use zlib, which is part of the node core. This allows us to implement a gzip file (a common file compression algorithm). We will copy the contents as before but aso create a compressed verion. Here we use zlib.createGzip(); to create a duplex stream. Since that stream is also writable, the pipe method will return this destination stream.  This is called chaining.
+Here we will use zlib, which is part of the node core. This allows us to implement a gzip file (a common file compression algorithm). We will copy the contents as before but also create a compressed verion. Here we use zlib.createGzip(); to create a duplex stream. Since that stream is thus also writable, the pipe method will return a stream of compressed data, which can then be writen to file.  This is called chaining.
 
 Chaining: a method returns an object so that we can keep calling methods. If the parent object is returned then it's called cascading.
 
@@ -876,7 +880,7 @@ Chaining: a method returns an object so that we can keep calling methods. If the
     const zlib = require('zlib');
 
     var readable = fs.createReadStream(
-    __dirname + '/greet.txt'
+        __dirname + '/greet.txt'
     );
 
     var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
@@ -890,7 +894,7 @@ Chaining: a method returns an object so that we can keep calling methods. If the
     // Cannot chain from 'writable' because it's not readable
     readable.pipe(writable);
 
-    // three streams here: 'readable', 'gzip', 'compressed'.
+    // three streams chanied together here: 'readable', 'gzip', 'compressed'.
     readable.pipe(gzip).pipe(compressed);
 
 

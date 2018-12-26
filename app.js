@@ -1,25 +1,14 @@
-const fs = require('fs');
-const zlib = require('zlib');
+var http = require('http');
 
-var readable = fs.createReadStream(
-   __dirname + '/greet.txt'
-);
+http.createServer(function(req, res) {
 
-var writable = fs.createWriteStream(__dirname + '/greetCopy.txt');
+   res.writeHead(
+      200, 
+      {
+         'Content-Type': 'text/plain'  // simple plain text
+      }
+   );
 
-// a stream of compressed data to a file
-var compressed = fs.createWriteStream(__dirname + '/greetCopy.txt.gz');
+   res.end('Hello World\n'); // Always end data with a new line.
 
-// a transformative stream; creates compressed data
-var gzip = zlib.createGzip(); 
-
-// Cannot chain from 'writable' because it's not readable
-readable.pipe(writable);
-
-// three streams here: 'readable', 'gzip', 'compressed'.
-readable.pipe(gzip).pipe(compressed);
-
-
-
-
-
+}).listen(1337, '127.0.0.1'); // use port 1337 on localhost.

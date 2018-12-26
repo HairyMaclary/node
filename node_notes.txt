@@ -690,7 +690,7 @@ Typed arrays;
 
 This is a feature embedded into the v8 engine. It is not actually nodejs. It is a way to deal with binary data in the buffer. If you change the array you are changing the buffer. If you read from the array you actually reading from the buffer. 
 
-These typed array have various structures (or types!). However, you use them like an array.
+These typed array have various structures (or types!). However, you can use array methods on them.
 
     // storing raw binary data: 64 bits
     var buffer = new ArrayBuffer(8); // give the size in bytes, not bits
@@ -758,6 +758,9 @@ app.js:
     const greet = fs.readFileSync(__dirname + '/greet.txt', 'utf-8'); // utf-8 encoding specified
     console.log(greet);  // Hello world!
 
+
+If the encoding option is specified then this function returns a string. Otherwise it returns a buffer.
+
 Notice 'Sync' in the method name. This tells that all code waits until the file has been read to the buffer and then returned back as a string. In most case you do not want your code to be synchronous. For example you might have many users and you do not want them to be blocked. The file might be vary large and so require a large buffer or a long stream, which takes time. fs.readFile is async and requires a callback. As in the normal event-loop case, the callback is run once libuv has recieved a response from the OS. 
 
 note: 'error first callbacks' are popular in node. The first argument will be null if there is no error. 
@@ -788,21 +791,23 @@ Allways use async when you can because it is a better experience for your users.
 
 Streams
 
-The buffer lives in a place called the heap. This is some memory allocated to the program. If you had many users all requesting the same file at the same time you may have problems.
+[An object for managing data as it passes through a buffer object.]
+
+The buffer lives in a place called the heap. This is some memory allocated to the program. If you had many users all requesting the same file at the same time then you may have problems.
 
 Chunk: a piece of data being sent through a stream. Usully limited to the buffer size.
 
-If you dig into the stream.js library file you can see that a stream object is an event emitter (it ueses util.inherits to extend EE). When certain events have occured code is then run. There are 5 types of stream objects you can use directly from node; readable (only read the data and you can't send data back), writable (send data but you can't read data from the stream), duplex (read and write data), transform (change the data as it moves through the stream), and passthrough. 
+If you dig into the stream.js library file you can see that a stream object is an event emitter (it uses util.inherits to extend EE). When certain events have occured code is then run. T
 
-The shared stream object at the base of these stypes is an 'abstract' or base class. Abstract classes are those you never work with directly but instead always only inherit from into a new custom object. This means that we are provided with base ideas about what a stream should be but we have to implement how exacty how we deal with the information we expect to recieve. In saying this however, nodejs provides several implementations, which were those mentioned above.
+The shared stream object at the base of these types is an 'abstract' or base class. Abstract classes are those you never work with directly but instead always only inherit from into a new custom object. This means that we are provided with base ideas about what a stream should be but we have to implement how exacty how we deal with the information we expect to recieve. In saying this however, nodejs provides several implementations of stream objects; readable (only read the data and you can't send data back), writable (send data but you can't read data from the stream), duplex (read and write data), transform (change the data as it moves through the stream), and passthrough. 
 
-So in terms of a protoype chain we might have something like 
+So in terms of a prototype chain we might have something like 
 
     EventEmitter.prototype --> Stream.prototype --> Stream.Readable.prototype --> CustomStream
 
-When we talk about readable and writable we have to remember we are talking about these concepts from node's perspective. There may be another entity doing it's own thing at the other end of a data stream (as opposed to a stream object), such as a webserver or a browser. For example a node server will perceive that requests from a browser are readable but return data that is send back is writable.
+When we talk about readable and writable we have to remember we are talking about these concepts from node's perspective. There may be another entity doing it's own thing at the other end of a data stream (as opposed to a stream object), such as a webserver or a browser. For example a node server will perceive that requests from a browser are readable but return data is writable.
 
-Since streams are abstract we need a concrete implementation as an example. One is the fs module. fs.readStream. This is a specialised type of read only stream object which follows the above flow diagrammme.
+Since streams are abstract we need a concrete implementation as an example. One is the fs module. fs.readStream. This is a specialised type of read only stream object which follows the above prototype diagrammme.
 
 So in this example there is a text file, greet.txt, which has 10's of kBytes of data. Once files get larger they get bigger than the buffer you'll only get pieces, or 'chunks' of the text file at any one time. This means that same 'data' event will be fired for each chunk, so that each associated event listener will be invoked multiple times. The default buffer size is 64 kBytes.
 
@@ -817,6 +822,7 @@ So in this example there is a text file, greet.txt, which has 10's of kBytes of 
     );
 
     // check out the docs for the correct event type; 'data'
+    // here 'chunk' is the buffer.
     readable.on('data', function(chunk) {
     
         // If no encoding is specified this is a hex representaiton of the binary.
@@ -899,6 +905,93 @@ Chaining: a method returns an object so that we can keep calling methods. If the
 
 
 Node's memory and speed is optimised for streams, so we should always be thinking about when we can use streams. Always consider streams and async methods over sync methods.
+
+
+
+
+HTTP and Web server
+-------------------------------------------
+
+
+TCP/IP - how information is actually transferred
+
+Protocol: a set of rules two sides agree to use when communicating. 
+
+IP: Internet Protocol. Each computer on the internet is assigned a unique IP address, which is a sequence of numbers. So this protocol is the one in which we agree on how we identify computers. 
+
+A socket is the line in which information flows betweent two connected computers. On the internet we open and close sockets all the time. A 'web socket' is kept open all the time.
+
+Information is structured within it's own protocol -  a set of rules for how it should be structured. This might be http, ftp, or smtp, etc (the p stands for protocol). 
+
+TCP is the protocol for how that information is sent (as distinct from how it is structured). TCP tells us to split up information into pieces and send each piece one at a time through the socket. Each individual piece is called a packet.
+
+TCP is similar to a stream, and this is the way node treats internet data. 
+
+Port: an OS assigns a unique number called a port to a program. When a computer then receives a packet it can be sent to the correct program. When a program is set up on the operating system to receive packets from a particular port, it is said that the program is listening to that port. For example, a server might be running both node and a separate email server. Assigning these various ports is called mapping. 
+
+The port is specified as part of the IP address. Here the port, 443, is separated from the main IP address with a colon: 78.132.160.4:443. When you put the full address altogether it's called a socket address. Normally we just use a domain name that maps to a socket address. 
+
+HTTP: Hypertext transfer protocol a set of rules for the format of data on the internet. It is actually use not just for hypertext (HTML) but for other information types as well, like javascript files and images. 
+
+Headers: name=value pairs separated by a colon. These are used in a request.
+
+request:
+
+    CONNECT www.google.com:443 HTTP/1.1
+    Host: www.google.com
+    Connection: keep-alive
+
+response:
+
+    HTTP/1.1 200 OK
+    Content-Length: 44
+    Content-Type: text/HTML
+
+    <html><head>...</html></head>
+
+The first line in the response is the 'status' or 'status line'. Then come two headers. After a space is the 'body'.
+
+Here the content type is a MIME type. 'Multipurpose Internet Mail Extensions' is a standard for specifying the type of data being sent. It was originally created for sending attachments via email. Other MIME types include application.json and image/jpeg. The browser will know how to treat the object based on it's MIME type. 
+
+So how do we build http requests and responses? We have to parse them, which means to break them up into pieces and then use those pieces. This then, comes down to formatting. There is a program inside nodeJS that does this: http_parser. It breaks up HTTP messages and breaks them up ito separate pieces of data, like status codes, so that we can see them and make decisions with them. 
+
+It's actually a standalone module made in C code but it is wrapped up in node and given extra features. See http.js, which is the actual module that we will import and create servers with. 
+
+
+Building a Web server
+
+
+Here we import the http module and use it's createServer method. That method takes a callback that is actually used as an event listener for a particular event that the server will emit. If you look inside the relevant node sub module, _http_server.js, you can see that the event type is 'request', and the callback is passed two objects. One represents the request and the other is a stream representation. This is the stream in which the response is sent back. Usally the arguments are named 'req' and 'res'.
+
+You'll also see the callback using writeHead(). It first specifies the response and then uses an object for the headers. Note that you need quotes for the keys because some http headers are not valid javascript variable names.
+
+After creating a server object we then need to map a port to it so that it can listen for requests. We do this with the listen method. 
+
+    var http = require('http');
+
+    http.createServer(function(req, res) {
+
+        res.writeHead(200, {
+            'Content-Type': 'text/plain'  // simple plain text
+        });
+
+        res.end('Hello World\n'); // Always end data with a new line.
+
+    }).listen(1338, '127.0.0.1'); // use port 1337 on localhost.
+
+(To run this use the normal <node app.js> command in the command line but then open up a browser, which are really designed to build http requests and understand responses, and use localhost:1337 as the address. )
+
+You can go to the network tab in the dev tools and see the details of the reqest and response.  There are extra headers in both cases. Node will automatically generate some extra headers in the response, and the browser adds in quite a few to the request. 
+
+You can also run the debugger in vs vode while also placing break points in the browser, which can be very handy. In the VS Code debugger you will see various obejts like the request and the response. Within those you can see the socket, the headers, and that we are dealign with streams and event emitters. (hit refresh on the browser since the callback only runs when a request is recieved).
+
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,30 @@
+{
+  "name": "nodejs-tony-course",
+  "version": "1.0.0",
+  "description": "Playing with npm in the nodejs course",
+  "main": "app.js",
+  "scripts": {
+    "test": "t"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HairyMaclary/node.git"
+  },
+  "keywords": [
+    "node"
+  ],
+  "author": "Hairy Maclary",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HairyMaclary/node/issues"
+  },
+  "homepage": "https://github.com/HairyMaclary/node#readme",
+  "dependencies": {
+    "ejs": "^2.6.1",
+    "express": "^4.16.4",
+    "moment": "^2.23.0"
+  },
+  "devDependencies": {
+    "jasmine-node": "^1.16.2"
+  }
+}

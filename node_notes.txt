@@ -1609,6 +1609,24 @@ app.js:
 
 
 
+Javacript, JSON and Databases
+--------------------------------------------------
+
+Relational Databases and SQL
+
+Relational databases are normally thought of as tables, with fields as the column titles and rows of data. However in properly formatted relational databases we try not have all data in one table. For example instead of a table of contacts we might have table of people and then a table of addresses. Successive layers are usually linked by an ID. 
+
+People table fields: ID, FirstName, lastName
+PersonAddresses table fields: PersonID, AddressID
+Addresses Table: ID, AddressID
+
+This would be 'well normalised data', which means data that does not repeat itself unneccesarily.
+
+Asking questions about our data is often done with SQL. It can combine tables and get the information we want. 
+
+In Javascript we can think of a table as an array or objects. We need something that can connect to a database and convert into a javascript object. 
+
+
 
 
 

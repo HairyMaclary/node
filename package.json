@@ -23,9 +23,10 @@
     "body-parser": "^1.18.3",
     "ejs": "^2.6.1",
     "express": "^4.16.4",
-    "moment": "^2.23.0"
+    "moment": "^2.23.0",
+    "update": "^0.7.4"
   },
   "devDependencies": {
-    "jasmine-node": "^1.16.2"
+    "jest": "^23.6.0"
   }
 }

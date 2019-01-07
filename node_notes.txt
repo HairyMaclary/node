@@ -1448,13 +1448,15 @@ Now just type in a URL with a query string:
 And this then displays an h2 with `QueryString: 123`
 
 
-However, for POST and json cases we will need to parse the body of the request. The middleware module is called body-parser. 
+However, for the POST and JSON cases we will need to parse the body of the request. The middleware module is called body-parser. 
 
     npm install body-parser --save
 
 app.js:
 
     var bodyParser = require('body-parser');
+
+
 
 
 

@@ -1456,18 +1456,154 @@ app.js:
 
     var bodyParser = require('body-parser');
 
+index.ejs:
+    <html>
+
+    <head>
+        <link rel="stylesheet" href="assets/style.css" text="text/css">
+        <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+            crossorigin="anonymous"></script>
+    </head>
+
+    <body>
+        <form action="/Person" method="POST">
+            First Name: <input type="text" id="firstname" name="firstname" />
+            Last Name: <input type="text" id="lastname" name="lastname" />
+            <input type="submit" value="submit" />
+        </form>
+        <script>
+            $.ajax({
+                type:"POST",
+                url: "/personjson",
+                data: JSON.stringify({firstname: 'Jane', lastname: "Doe"}),
+                dataType: 'json',
+                contentType: 'application/json'
+            })
+        </script>
+    </body>
+
+    </html>
+
+app.js:
+
+    // create application/x-www-form-urlencoded parser
+    var urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+    // create application/json parser function to be middleware
+    var jsonParser = bodyParser.json();
+
+    //use the body-parser as a first callback (we can have multiple callbacks)
+    app.post('/person', urlencodedParser, function(req, res, next) {
+        res.send('Thank You!');
+
+        // urlencodedParser will add a body property to req
+        console.log(JSON.stringify(req.body), req.body.firstname, req.body.lastname);
+        // {"firstname":"Bob","lastname":"Jones"} Bob Jones
+    });
+
+    //use the a middlware callback for parsing JSON
+    app.post('/personjson', jsonParser, function(req, res, next) {
+        res.send('Thank you for the JSON data');
+
+        // jsonParser will add a body property to req
+        console.log(JSON.stringify(req.body), req.body.firstname, req.body.lastname);
+        // {"firstname":"Jane","lastname":"Doe"} Jane Doe
+    });
 
 
 
+Restful APIs and JSON made Easy with Express
+
+REST is an architectural style for building APIs. It stands for 'Representational State Transfer'. We decide that HTTP verbs and URLs mean something. We want to standardises how we treat verious verbs on the server so that what happens matches our expectations. 
+
+A simple example of a restful API looks like:
+
+    app.get('/api/person/:id', function(req, res) {
+        // get some data from the database
+        res.json({ firstName: 'John',  lastName: "Doe"});
+    });
+
+    app.post('/api/person', jsonParser, function(req, res, next) {
+        // save to the database
+    });
+
+    app.delete('/api/person/:id', function(req, res) {
+        // delete a person from the database
+    });
+
+With express we can see the URL and the verb together so that we can better see what is going on. A good restful API should use the http verbs and respond as expected. 
 
 
 
+Structuring an App in Express
+
+In real world applications one app.js file is not enough. We use a module approach, and because Express is 'unopinionated' there are many available options. One possiblity is express-generator:
+
+    https://expressjs.com/en/starter/generator.html
+
+    $ npm install express-generator -g
+
+After installing navigate to a new project folder and run:
+
+    $ express myAppName
+
+A standard set of folders such as routes and views folders are created. 
+
+Note that some middleware is used for routes and users. These are two local modules.
+
+app.js
+
+    var indexRouter = require('./routes/index');
+    var usersRouter = require('./routes/users');
+
+If you look inside, say the users module, you see express.Router();
+
+This is router middleware. Instead of having get and post methods on the app, as we did above, we put them on the router.
+
+users.js:
+
+    var express = require('express');
+    var router = express.Router();
+
+    /* GET users listing. */
+    router.get('/', function(req, res, next) {
+    res.send('respond with a resource');
+    });
+
+    module.exports = router;
+
+This is used inside app.js to break p and organise the number of routes:
+
+    app.use('/', indexRouter);
+    app.use('/users', usersRouter);
 
 
+Another way to break up your project is to just make a top level directory called 'controllers'. Within that you might have files like apiController.js and htmlController.js.
+We then just pass the app object around ad add features to it.
+
+apiController.js:
+
+    module.exports = function(app) {
+        
+        app.get('/api/person/:id', function(req, res) {
+            // get some data from the database
+            res.json({ firstName: 'John',  lastName: "Doe"});
+        });
+        
+        app.post('/api/person', jsonParser, function(req, res, next) {
+            // save to the database
+        });
+        
+        app.delete('/api/person/:id', function(req, res) {
+            // delete a person from the database
+        });
+    }
 
 
+app.js:
 
-
+    var apiController = require('./controllers/apiController');
+    apiController(app);
 
 
 

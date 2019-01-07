@@ -1,9 +1,17 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var apiController = require('./controllers/apiController');
+
 var app = express();
 
 // use default port 3000 if no ennvironment variable has been set.
 var port = process.env.PORT || 3000;
+
+// create application/x-www-form-urlencoded parser
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
+
+// create application/json parser function to be middleware
+var jsonParser = bodyParser.json()
 
 // any URL that begins with '/assets' will be handled here
 app.use('/assets', express.static(__dirname + '/public'));
@@ -28,12 +36,32 @@ app.get('/person/:id', function(req, res, next) {
     next();
 });
 
+//use the body-parser as a first callback (we can have multiple callbacks)
+app.post('/person', urlencodedParser, function(req, res, next) {
+    res.send('Thank You!');
+
+    // urlencodedParser will add a body property to req
+    console.log(JSON.stringify(req.body), req.body.firstname, req.body.lastname);
+    // {"firstname":"Bob","lastname":"Jones"} Bob Jones
+});
+
+//use the a middlware callback for parsing JSON
+app.post('/personjson', jsonParser, function(req, res, next) {
+    res.send('Thank you for the JSON data');
+
+    // jsonParser will add a body property to req
+    console.log(JSON.stringify(req.body), req.body.firstname, req.body.lastname);
+    // {"firstname":"Jane","lastname":"Doe"} Jane Doe
+});
+
 // send object literal syntax automatically converted to a JSON string
 app.get('/api', function(req, res) {
     res.json({ firstName: 'John',  lastName: "Doe"});
 });
 
 app.listen(port);
+
+
 
 
 

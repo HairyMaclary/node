@@ -1,3 +1,45 @@
+[MobX:
+
+class Thing {
+   @observable
+   state: number;
+
+   @computed
+   get multiplied() {
+      return this.state * this.otherState;
+   }
+
+   @action
+   doThing() {
+       this.state = 0;
+        
+       await blah();
+       
+       this.otherState = 1;
+   }
+
+}
+
+Any instance of a Thing will have a member/property called 'state'. If state changes there may be a redraw.
+If there is an observable inside a method decorated with @computed, as there is here with multiplied(), then if multiplied() is called within a render method a redraw will occur. 
+doThing() also causes a redraw. Everything inside is normally batched up so that the system does not get to complicated. However be careful when using an await. If you do use like above , eveything up to inlcuding the await is batched up but then every thing else is actioned independantly. This is caused by an internal function, runInAction(), only including up to the await. It looks like this:
+
+   @action
+   doThing() {
+      runInAction(() => {
+         // modify observable
+         this.state = 0;
+         
+         await blah();
+      });
+
+      this.otherState = 1;
+   }
+
+
+
+]
+
 [for inclusion into other notes:
 
 Function Constructors
@@ -286,15 +328,15 @@ Events in nodejs are:
 
     'Something that has happened in our app that we can repsond to'.
 
-In nodejs we actually talk about two different kinds of events. On one side we have system events. They come from the c++ side of the nodejs core thanks to a library called libuv. These are events that have come form the computer system, like "I've finished reading a file", or "I've recieved information from the internet". These are events that JS did not originally have. 
+In nodejs we actually talk about two different kinds of events. On one side we have system events. They come from the c++ side of the nodejs core thanks to a library called libuv. These are events that have come from the computer system, like "I've finished reading a file", or "I've recieved information from the internet". These are events that JS did not originally have. 
 
-On the other side, in the JS core, we have custom events. These are completly different and are events that you can create for yourself. They are created in  an area is called the 'Event Emitter'. 
+On the other side, in the JS core, we have custom events. These are completly different and are events that you can create for yourself. They are created in an area called the 'Event Emitter'. 
 
 Sometimes system events are sent on as custom events, so that they appear to be the same thing. But, they are not. 
 
 The js side is actually faking it. They are not real events. JS has no event concept or object. We create our own event library with the techinique that the node event emitter uses. 
 
-One key to understanding the event emiter is recalling that I can use string to dynamically access changing properties in an object:
+One key to understanding the event emitter is recalling that we can use strings to dynamically access changing properties in an object:
 
     var obj = {
         greet: 'Hello'
@@ -310,7 +352,7 @@ One key to understanding the event emiter is recalling that I can use string to 
     console.log(obj[prop]); // Hello
 
 
-You also need to recall that array are collections, and since functions are first class objects they too can be included in an array.
+You also need to recall that arrays are collections, and since functions are first class objects they too can be included in an array.
 
     let arr = [];
 
@@ -477,12 +519,12 @@ Inheriting from the Event Emitter
 
 We know about several inheritance approaches (ie ways to set up the prototype chain). Function constructors, extending a class and Object.create().
 
-Within util.js (the utilities module in the node library), there is a method called inherits. This allows us to give set up an entire node library object, like the event emitter module, as the prototype of one of our own contructors. That is, a node module becomes the prototype of a constructor. The first argument is your custom constructor and the second is the module that will become the prototype.
+Within util.js (the utilities module in the node library), there is a method called inherits. This allows us to set up an entire node library object, like the event emitter module, as the prototype of one of our own contructors. That is, a node module becomes the prototype of a constructor. The first argument is your custom constructor and the second is the module that will become the prototype.
 
 
 Under the hood it looks a little like 
 
-    myConstructor.prototype = Object.create(superContructor.prototype);
+    myConstructor.prototype = Object.create(superConstructor.prototype);
 
 
 app.js:
@@ -600,7 +642,7 @@ app.js
     numEventer.request();
 
 
-Here is another example of utils along with comlete inheritance. This a sommon pattern in nodejs
+Here is another example of utils along with complete inheritance. This a common pattern in nodejs
 
     const util = require('util');
 
@@ -638,7 +680,7 @@ Aysnchronous Code, Streams and Buffers
 
 Aysnchronous: more than one process is running simultaneously. JS and v8 are synchronous (one process or one line of code running at a time). Node does things asynchronously. When we think about synchronisity we really have to think about what a js engine is sitting inside of. It is a browser or is it node?
 
-First recall what a callback is: a function passed to another function, which we asusme will be invoked at some point. The function 'calls back' invoking the function you gave it when it is done with its work.
+First recall what a callback is: a function passed to another function, which we asume will be invoked at some point. The function 'calls back' invoking the function you gave it when it is done with its work.
 
 We now look at the c++ side of events in node with libuv, with the event loop and non-blocking code. We have already seem custom events with the event emitter. This was just a trick. Real system events are handled in the c++ core by a library called libuv. This manages events from the operating system. It is closer to the machine. 
 
@@ -649,7 +691,7 @@ V8 is synchronous, so any work related to the callback is again placed in v8's o
 
 Streams and Buffers
 
-A buffer is a temporary holding place for data while that data is being moved from one place to another. It is intentioanlly limited in size so that the temporary data is not stored for long. Usually this data is handled by an object called a 'stream'.
+A buffer is a temporary holding place for data while that data is being moved from one place to another. It is intentionally limited in size so that the temporary data is not stored for long. Usually this data is handled by an object called a 'stream'.
 
 A stream is a sequence of data moving over time. Within it are pieces of data that are eventually combined into a whole. 
 
@@ -657,7 +699,7 @@ A stream is a sequence of data moving over time. Within it are pieces of data th
 
 Buffers
 
-Traditionally JS was not very good at encoding. That is, dealing with pure binary data. Suck work was more related to server side jobs. So node expands JS and allows us to deal with binary data.
+Traditionally JS was not very good at encoding. That is, dealing with pure binary data. Such work was more related to server side jobs. So node expands JS and allows us to deal with binary data.
 
 Binary data: data is stored in binary (aka base 2). Each 1 (high V) or 0 (low V) is called a 'bit' or 'binary digit'.
 
@@ -761,7 +803,7 @@ app.js:
 
 If the encoding option is specified then this function returns a string. Otherwise it returns a buffer.
 
-Notice 'Sync' in the method name. This tells that all code waits until the file has been read to the buffer and then returned back as a string. In most case you do not want your code to be synchronous. For example you might have many users and you do not want them to be blocked. The file might be vary large and so require a large buffer or a long stream, which takes time. fs.readFile is async and requires a callback. As in the normal event-loop case, the callback is run once libuv has recieved a response from the OS. 
+Notice 'Sync' in the method name. This tells that all code waits until the file has been read to the buffer and then returned back as a string. In most cases you do not want your code to be synchronous. For example you might have many users and you do not want them to be blocked. The file might be vary large and so require a large buffer or a long stream, which takes time. fs.readFile is async and requires a callback. As in the normal event-loop case, the callback is run once libuv has recieved a response from the OS. 
 
 note: 'error first callbacks' are popular in node. The first argument will be null if there is no error. 
 
@@ -797,7 +839,7 @@ The buffer lives in a place called the heap. This is some memory allocated to th
 
 Chunk: a piece of data being sent through a stream. Usully limited to the buffer size.
 
-If you dig into the stream.js library file you can see that a stream object is an event emitter (it uses util.inherits to extend EE). When certain events have occured code is then run. T
+If you dig into the stream.js library file you can see that a stream object is an event emitter (it uses util.inherits to extend EE). When certain events have occured code is then run. 
 
 The shared stream object at the base of these types is an 'abstract' or base class. Abstract classes are those you never work with directly but instead always only inherit from into a new custom object. This means that we are provided with base ideas about what a stream should be but we have to implement how exacty how we deal with the information we expect to recieve. In saying this however, nodejs provides several implementations of stream objects; readable (only read the data and you can't send data back), writable (send data but you can't read data from the stream), duplex (read and write data), transform (change the data as it moves through the stream), and passthrough. 
 
@@ -1624,7 +1666,70 @@ This would be 'well normalised data', which means data that does not repeat itse
 
 Asking questions about our data is often done with SQL. It can combine tables and get the information we want. 
 
-In Javascript we can think of a table as an array or objects. We need something that can connect to a database and convert into a javascript object. 
+In Javascript we can think of a table as an array or objects. We need something that can connect to a database and convert data into a javascript object. 
+
+
+
+Node and mysql
+
+One several possible sql packages.
+
+    $ npm install mysql --save
+
+Check the documentation but basically you create a connection object to the database and then send it string requests. A javascript array of js objects is returned.
+
+
+
+NoSQL and Documents
+
+NoSQL is a variety of technologies that are alternatives to tables and sql. One of those is the 'document' database. MongoDB is one of those. Table is not stored in tables. The database just stores the js array of objects. Keys are repeated and use more space, but harddrive space is cheaper now. This gives us much more flexibility, such as changing our structure on the fly. 
+
+
+
+MongoDB abd Mongoose
+
+You can go to mlab.com and set up a free cloud based database. This will give a URL that you can plug into mongoose. Then set up a 'schema', which describes your objects or the document. 
+
+
+
+
+The MEAN Stack - MongoDB, Express, AngularJS and Nodejs
+-----------------------------------------------------
+
+Stack: the combination of all technologies used to build a piece of software.
+
+A full stack developer can work with all of the stack (client side software like Angular/React, server side like node, database like MongoDB and maybe even design).
+
+
+
+
+Browsers
+
+Like node, browsers are also written in C++ and they sometimes create features they go beyond the JS specification. But how does a browser break down data into a webpage? That is to do with the DOM.
+
+DOM: the Document Object Model. The structure that brwosers use to store and manage web pages. Browsers five the javascript engine the ability to manipulate the DOM.
+
+The browser is a program sitting on the client's computer. As a result of a http request is recieves some html. The html response body contains the html. The browser takes that html and converts it into a hierachy of objects, a tree, where nodes represent html elements. HTML is structured in a tree like pattern so it translates very well to the DOM. 
+
+The browser then renders the webpage using the DOM, and not the html. 
+
+Also embedded in the browser is the javascript engine. When the engine runs code that alter the DOM (eg event handlers adn script tags), then the web page is redrawn. 
+
+Various browsers can require slightly different code. You can save a lot of time by using someone else's code to handle those variances and also add additional functionality. Here we use AngularJS for that purpose. Angular works on the client side in the browser while node works in the server. 
+
+Since Angluar will will used on the client side one way to speed up your node server to get the google CDN url for Angular and place it in a script tag. The client then will load the JS file for Angular from Google rather than your server.
+
+One of the biggest challanges to full stack development is knowing which part of your code is on the server and which parts run in the client. Understanding the interaction between the two is also important.
+
+
+
+Testing your API
+
+Try www.getpostman.com
+
+
+
+
 
 
 
